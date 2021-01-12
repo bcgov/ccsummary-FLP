@@ -1,0 +1,12 @@
+name: ccsummary-FLP
+title: ccsummary-FLP
+username:
+account: bcgov-env
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3452821
+bundleId: 4084773
+url: https://bcgov-env.shinyapps.io/ccsummary-FLP/
+when: 1610421214.32043
+asMultiple: FALSE
+asStatic: FALSE

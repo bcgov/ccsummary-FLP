@@ -700,7 +700,7 @@ server <- function(input, output, session) {
     x1 <- data[2, which(variables==var1)]
     y1 <- data[2, which(variables==var2)]
     points(x1,y1, pch=16, col="gray", cex=2.5)
-    text(x1,y1, "2001-2019", cex=1.15, font=2, pos=4, col="gray", offset=0.9)  
+    text(x1,y1, "1991-2019", cex=1.15, font=2, pos=4, col="gray", offset=0.9)  
     }
     
     for(gcm in gcms){

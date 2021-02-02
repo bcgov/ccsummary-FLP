@@ -5,8 +5,8 @@ account: bcgov-env
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3452821
-bundleId: 4084773
+bundleId: 4155132
 url: https://bcgov-env.shinyapps.io/ccsummary-FLP/
-when: 1610421214.32043
+when: 1611867518.75697
 asMultiple: FALSE
 asStatic: FALSE

@@ -204,10 +204,12 @@ spps.all <- unique(spps.all)[order(unique(spps.all))]
 spps.native <- unique(spps.native)[order(unique(spps.native))]
 
 ## SPATIAL DATA
-bgc.simple <- st_read("data/bec.simpler.shp")
-bgc.list <- as.character(unique(bgc.simple$MAP_LABEL))
-zone.list <- as.character(unique(bgc.simple$ZONE))
-
+bgc.simple <- st_read("data/bgc.simple.shp")
+bgc.maprecord <- as.character(bgc.simple$BGC)
+zone.maprecord <- bgc.maprecord
+for(i in zonecolors$classification){ zone.maprecord[grep(i,bgc.maprecord)] <- i }
+bgc.list <- sort(unique(bgc.maprecord))
+zone.list <- sort(unique(zone.maprecord))
 
 # Define UI ----
 ui <- fluidPage(
@@ -1003,8 +1005,8 @@ server <- function(input, output, session) {
           baseGroups = c("Base map", "Terrain only", "Satellite view"),
           options = layersControlOptions(collapsed = FALSE),
         ) %>%
-        addPolygons(data=bgc.simple[bgc.simple$ZONE == showzone,], fillColor = "red", color="red", smoothFactor = 0.2, fillOpacity = 0.4, weight=2, opacity=1)%>%
-        addPolygons(data=bgc.simple[bgc.simple$MAP_LABEL == showbgc,], fillColor = "black", color="black", smoothFactor = 0.2, fillOpacity = 0.4, weight=2, opacity=1) 
+        addPolygons(data=bgc.simple[zone.maprecord == showzone,], fillColor = "red", color="red", smoothFactor = 0.2, fillOpacity = 0.4, weight=2, opacity=1)%>%
+        addPolygons(data=bgc.simple[bgc.maprecord == showbgc,], fillColor = "black", color="black", smoothFactor = 0.2, fillOpacity = 0.4, weight=2, opacity=1) 
       
     },
     )

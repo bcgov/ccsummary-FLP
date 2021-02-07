@@ -527,7 +527,28 @@ ui <- fluidPage(
 # Define server logic ----
 server <- function(input, output, session) {
   
+  
+  
   output$map <- renderLeaflet({
+    
+    
+    leaflet() %>% 
+      addTiles() %>% 
+      # addProviderTiles("Esri.WorldImagery", group = "Satellite view") %>%
+      # addProviderTiles("Esri.WorldTerrain", group = "Terrain only") %>%
+      fitBounds(lng1 = bbox[1], lat1 = bbox[3], lng2 = bbox[2], lat2 = bbox[4]) %>%
+      # addLayersControl(
+      #   baseGroups = c("Base map", "Terrain only", "Satellite view"),
+      #   options = layersControlOptions(collapsed = FALSE),
+      # ) %>%
+      addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)
+    
+    
+    
+  }
+  )
+  
+  observe({
     
     # proj.year <- 2055
     # zonelevel=F
@@ -563,43 +584,16 @@ server <- function(input, output, session) {
       proxy %>% clearPopups() %>%
         addPopups(click$lng, click$lat, text)
     })
-
-    if(input$type==1){
-      leaflet() %>% 
-        addTiles() %>% 
-        addProviderTiles("Esri.WorldImagery", group = "Satellite view") %>%
-        addProviderTiles("Esri.WorldTerrain", group = "Terrain only") %>%
+    
+    if(input$type==2){
+      
+      leafletProxy("map") %>%
         addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
-        fitBounds(lng1 = bbox[1], lat1 = bbox[3], lng2 = bbox[2], lat2 = bbox[4]) %>%
-        addLayersControl(
-        baseGroups = c("Base map", "Terrain only", "Satellite view"),
-        options = layersControlOptions(collapsed = FALSE),
-        ) %>%
-      addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)
-
-      } else if(input$type==2){
-        
-      leaflet() %>%
-        addTiles() %>%
-        # addProviderTiles("Esri.WorldImagery", group = "Satellite view") %>%
-        # addProviderTiles("Esri.WorldTerrain", group = "Terrain only") %>%
-        addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
-        fitBounds(lng1 = bbox[1], lat1 = bbox[3], lng2 = bbox[2], lat2 = bbox[4]) %>%
-        # addLayersControl(
-        # baseGroups = c("Base map", "Terrain only", "Satellite view"),
-        # options = layersControlOptions(collapsed = FALSE)
-        # ) %>%
         addRasterImage(X, colors = ColScheme, method="ngb", opacity = transparency, maxBytes = 6 * 1024 * 1024)%>%
-        # addMouseCoordinates() %>%
-        # addImageQuery(X, type="mousemove", layerId = "values")%>% #currently doesn't work
         addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)
-        
 
-        
-        
-        
-      } else if(input$type==3){
-
+    } else if(input$type==3){
+      
       edatope <- input$edatope
       if(input$plotspp==1){
         if(edatope=="B2") spp.focal <- input$spp.focal.1.B2
@@ -610,39 +604,27 @@ server <- function(input, output, session) {
         if(edatope=="C4") spp.focal <- input$spp.focal.2.C4
         if(edatope=="D6") spp.focal <- input$spp.focal.2.D6
       }  
-        
+      
       # spp.focal <- get(paste("input$spp.focal", input$plotspp, edatope, sep="."))
-
+      
       suit <- SuitLookup$ESuit[which(SuitLookup$Spp==spp.focal)][match(as.vector(unlist(SiteLookup[which(names(SiteLookup)==edatope)])), SuitLookup$SS_NoSpace[which(SuitLookup$Spp==spp.focal)])]
       temp <- suit[match(BGC.pred, SiteLookup$BGC)]
       temp[which(temp>3)] <- NA #set non-suitable to NA
-
+      
       values(X) <- factor(temp, levels=1:3)
       values(X)[1:3] <- 1:3 # this is a patch that is necessary to get the color scheme right.
-
-      leaflet() %>%
-        addTiles() %>%
-        # addProviderTiles("Esri.WorldImagery", group = "Satellite view") %>%
-        # addProviderTiles("Esri.WorldTerrain", group = "Terrain only") %>%
-        addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
-        fitBounds(lng1 = bbox[1], lat1 = bbox[3], lng2 = bbox[2], lat2 = bbox[4]) %>%
-        # addLayersControl(
-        # baseGroups = c("Base map", "Terrain only", "Satellite view"),
-        # options = layersControlOptions(collapsed = FALSE)
-        # ) %>%
+      
+      leafletProxy("map") %>%
         addRasterImage(X, colors =  c("darkgreen", "dodgerblue1", "gold2"), method="ngb", opacity = transparency, maxBytes = 6 * 1024 * 1024)%>%
-      addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)%>%
-    addLegend(colors =  c("#006400", "#1E90FF", "#EEC900"), labels=c("1 (primary)", "2 (secondary)", "3 (tertiary)"))
+        addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)%>%
+        addLegend(colors =  c("#006400", "#1E90FF", "#EEC900"), labels=c("1 (primary)", "2 (secondary)", "3 (tertiary)"))
       
+    }
 
-      
-      }
-    
-  },
-  )
+  })
   
-
-    output$scatterPlot <- renderPlot({
+  
+  output$scatterPlot <- renderPlot({
     
     # proj.year <- 2055
     # rcp <- "rcp45"
@@ -656,8 +638,8 @@ server <- function(input, output, session) {
     # edatope <- edatopes[2]
     # spp.focal <- "Sx"
     # recent <- T
-      # gcm.focal <- "ensemble"
-      
+    # gcm.focal <- "ensemble"
+    
     proj.year <-  proj.years[as.numeric(input$proj.year)+2]
     # rcp <- rcps[as.numeric(input$rcp)]
     var1 <- input$var1
@@ -674,7 +656,7 @@ server <- function(input, output, session) {
     variable.type2 <- variable.types[which(variables==var2)]
     
     if(input$type==1) {
-
+      
       #-------------------------
       # climate scatterplot
       #-------------------------
@@ -682,54 +664,54 @@ server <- function(input, output, session) {
       ratioscale <- if(input$ratioscale==T) T else F
       
       data <- if(ratioscale==T & variable.type1=="ratio") clim.meanChange.ratio else if(ratioscale==T & variable.type2=="ratio") clim.meanChange.ratio else clim.meanChange
-    
-    x <- data[, which(variables==var1)]
-    y <- data[, which(variables==var2)]
-    
-    xlim=range(x)*c(if(min(x)<0) 1.1 else 0.9, if(max(x)>0) 1.1 else 0.9)
-    ylim=range(y)*c(if(min(y)<0) 1.1 else 0.9, if(max(y)>0) 1.1 else 0.9)
-    
-    par(mar=c(3,4,0,1), mgp=c(1.25, 0.25,0), cex=1.5)
-    plot(x,y,col="white", tck=0, xaxt="n", yaxt="n", xlim=xlim, ylim=ylim, ylab="",
-         xlab=paste("Change in", variable.names$Variable[which(variable.names$Code==var1)]), 
-    )
-    par(mgp=c(2.5,0.25, 0))
-    title(ylab=paste("Change in", variable.names$Variable[which(variable.names$Code==var2)]))
-    lines(c(0,0), c(-99,99), lty=2, col="gray")
-    lines(c(-99,99), c(0,0), lty=2, col="gray")
-    
-    if(recent==T){
-    x1 <- data[2, which(variables==var1)]
-    y1 <- data[2, which(variables==var2)]
-    points(x1,y1, pch=16, col="gray", cex=2.5)
-    text(x1,y1, "1991-2019", cex=1.15, font=2, pos=4, col="gray", offset=0.9)  
-    }
-    
-    for(gcm in gcms){
-      i=which(gcms==gcm)
-      x2 <- data[c(1, which(scenario[,1]==gcm)), which(variables==var1)]
-      y2 <- data[c(1, which(scenario[,1]==gcm)), which(variables==var2)]
-      if(length(unique(sign(diff(x2))))==1){
-        x3 <- if(unique(sign(diff(x2)))==-1) rev(x2) else x2
-        y3 <- if(unique(sign(diff(x2)))==-1) rev(y2) else y2
-        s <- stinterp(x3,y3, seq(min(x3),max(x3), diff(xlim)/500)) # way better than interpSpline, not prone to oscillations
-        lines(s, col=ColScheme.gcms[i], lwd=2)
-      } else lines(x2, y2, col=ColScheme.gcms[i], lwd=2)
-      j=which(proj.years==proj.year)-1
-      points(x2,y2, pch=21, bg=ColScheme.gcms[i], cex=1)
-      points(x2[j],y2[j], pch=21, bg=ColScheme.gcms[i], cex=if(gcm==gcm.focal) 3.5 else 3)
-      text(x2[j],y2[j], mods[i], cex=if(gcm==gcm.focal) 0.7 else 0.5, font=2)
-    }
-    
-    axis(1, at=pretty(x), labels=if(ratioscale==T & variable.type1=="ratio") paste(pretty(x)*100, "%", sep="") else pretty(x), tck=0)
-    axis(2, at=pretty(y), labels=if(ratioscale==T & variable.type2=="ratio") paste(pretty(y)*100, "%", sep="") else pretty(y), las=2, tck=0)
-    
+      
+      x <- data[, which(variables==var1)]
+      y <- data[, which(variables==var2)]
+      
+      xlim=range(x)*c(if(min(x)<0) 1.1 else 0.9, if(max(x)>0) 1.1 else 0.9)
+      ylim=range(y)*c(if(min(y)<0) 1.1 else 0.9, if(max(y)>0) 1.1 else 0.9)
+      
+      par(mar=c(3,4,0,1), mgp=c(1.25, 0.25,0), cex=1.5)
+      plot(x,y,col="white", tck=0, xaxt="n", yaxt="n", xlim=xlim, ylim=ylim, ylab="",
+           xlab=paste("Change in", variable.names$Variable[which(variable.names$Code==var1)]), 
+      )
+      par(mgp=c(2.5,0.25, 0))
+      title(ylab=paste("Change in", variable.names$Variable[which(variable.names$Code==var2)]))
+      lines(c(0,0), c(-99,99), lty=2, col="gray")
+      lines(c(-99,99), c(0,0), lty=2, col="gray")
+      
+      if(recent==T){
+        x1 <- data[2, which(variables==var1)]
+        y1 <- data[2, which(variables==var2)]
+        points(x1,y1, pch=16, col="gray", cex=2.5)
+        text(x1,y1, "1991-2019", cex=1.15, font=2, pos=4, col="gray", offset=0.9)  
+      }
+      
+      for(gcm in gcms){
+        i=which(gcms==gcm)
+        x2 <- data[c(1, which(scenario[,1]==gcm)), which(variables==var1)]
+        y2 <- data[c(1, which(scenario[,1]==gcm)), which(variables==var2)]
+        if(length(unique(sign(diff(x2))))==1){
+          x3 <- if(unique(sign(diff(x2)))==-1) rev(x2) else x2
+          y3 <- if(unique(sign(diff(x2)))==-1) rev(y2) else y2
+          s <- stinterp(x3,y3, seq(min(x3),max(x3), diff(xlim)/500)) # way better than interpSpline, not prone to oscillations
+          lines(s, col=ColScheme.gcms[i], lwd=2)
+        } else lines(x2, y2, col=ColScheme.gcms[i], lwd=2)
+        j=which(proj.years==proj.year)-1
+        points(x2,y2, pch=21, bg=ColScheme.gcms[i], cex=1)
+        points(x2[j],y2[j], pch=21, bg=ColScheme.gcms[i], cex=if(gcm==gcm.focal) 3.5 else 3)
+        text(x2[j],y2[j], mods[i], cex=if(gcm==gcm.focal) 0.7 else 0.5, font=2)
+      }
+      
+      axis(1, at=pretty(x), labels=if(ratioscale==T & variable.type1=="ratio") paste(pretty(x)*100, "%", sep="") else pretty(x), tck=0)
+      axis(2, at=pretty(y), labels=if(ratioscale==T & variable.type2=="ratio") paste(pretty(y)*100, "%", sep="") else pretty(y), las=2, tck=0)
+      
     } else if(input$type==2){ 
-    
-    #-------------------------
-    # BGC scatterplot
-    #-------------------------
-    
+      
+      #-------------------------
+      # BGC scatterplot
+      #-------------------------
+      
       data <- if(zonelevel==T) zone.area else bgc.area
       clim.data <- clim.meanChange
       ColScheme <- if(zonelevel==T) zonecolors else bgccolors
@@ -752,7 +734,7 @@ server <- function(input, output, session) {
       axis(2, at=pretty(ylim), labels=pretty(ylim)/1000, tck=0, las=2)
       
       lines(rep(x[which(scenario[,1]==gcm.focal & scenario[,3]==proj.year)], 2), ylim, col="gray90", lwd=2)
-
+      
       increasing <- data[which(scenario$GCM==gcm.focal & scenario$proj.year==2085),]>data[1,]
       order.increasing <- rev(order(data[which(scenario$GCM==gcm.focal & scenario$proj.year==2085),increasing==T]))
       order.decreasing <- rev(order(data[1,increasing==F]))
@@ -776,7 +758,7 @@ server <- function(input, output, session) {
           s <- stinterp(x3,y3, seq(min(x3),max(x3), diff(xlim)/500)) # way better than interpSpline, not prone to oscillations
           lines(s, col=col.focal, lwd=2)
         } else lines(x1, y1, col=col.focal, lwd=3)
-
+        
         # labels
         position <- rep(0:2, times=100)
         side <- if(increasing.sort[i]==T) 4 else 2
@@ -813,104 +795,104 @@ server <- function(input, output, session) {
           text(x2[j],y2[j], mods[i], cex=if(gcm==gcm.focal) 0.7 else 0.5, font=2)
         }
       }
-    
+      
     } else if(input$type==3){ 
       
       if(input$plotspp==1){
-      
-          if(edatope=="B2") spp.focal <- input$spp.focal.1.B2
-          if(edatope=="C4") spp.focal <- input$spp.focal.1.C4
-          if(edatope=="D6") spp.focal <- input$spp.focal.1.D6
-
+        
+        if(edatope=="B2") spp.focal <- input$spp.focal.1.B2
+        if(edatope=="C4") spp.focal <- input$spp.focal.1.C4
+        if(edatope=="D6") spp.focal <- input$spp.focal.1.D6
+        
         #-------------------------
-      # species scatterplot
-      #-------------------------
-      
-      data <- if(spplevel==T) get(paste("suit.area", edatope, sep=".")) else get(paste("spp.area", edatope, sep="."))
-      clim.data <- clim.meanChange
-      ColScheme <- sppcolors
-      spps <- names(data)
-
-      x <- clim.data[, which(variables==var1)]
-      variable.type1 <- variable.types[which(variables==var1)]
-      
-      xlim=range(x)*c(if(min(x)<0) 1.1 else 0.9, if(max(x)>0) 1.1 else 0.9)-c(diff(range(x))/4, 0)
-      ylim=c(0, max(data, na.rm=T))
-      
-      par(mar=c(3,4,0,1), mgp=c(1.25, 0.25,0), cex=1.5)
-      plot(0,col="white", tck=0, xaxt="n", yaxt="n", xaxs="i", yaxs="i", xlim=xlim, ylim=ylim, ylab="",
-           xlab=paste("Change in", variable.names$Variable[which(variable.names$Code==var1)]), 
-      )
-      par(mgp=c(2.5,0.25, 0))
-      title(ylab=paste("Tree species' feasible area ('000 sq.km)"))
-      
-      axis(1, at=pretty(x), labels=pretty(x), tck=0)
-      axis(2, at=pretty(ylim), labels=pretty(ylim)/1000, tck=0, las=2)
-      
-      lines(rep(x[which(scenario[,1]==gcm.focal & scenario[,3]==proj.year)], 2), ylim, col="gray90", lwd=2)
-      
-      increasing <- data[which(scenario$GCM==gcm.focal & scenario$proj.year==2085),]>data[1,]
-      order.increasing <- rev(order(data[which(scenario$GCM==gcm.focal & scenario$proj.year==2085),increasing==T]))
-      order.decreasing <- rev(order(data[1,increasing==F]))
-      spps.increasing <- spps[increasing==T][order.increasing]
-      spps.decreasing <- spps[increasing==F][order.decreasing]
-      data.increasing <- data[,increasing==T][,order.increasing]
-      data.decreasing <- data[,increasing==F][,order.decreasing]
-      spps.sort <- c(spps.increasing, spps.decreasing)
-      data.sort <- cbind(data.increasing, data.decreasing)
-      increasing.sort <- increasing[match(spps.sort, spps)]
-      for(spp in spps.sort){
-        i <- which(spps.sort==spp)
-        col.focal <- if(spp.focal=="none") sppcolors[i] else "lightgray"  
-        col.focal2 <- if(spp.focal=="none") "black" else "darkgray"  
-        x1 <- x[c(1, which(scenario[,1]==gcm.focal))]
-        y1 <- data.sort[c(1, which(scenario[,1]==gcm.focal)), which(spps.sort==spp)]
-        y1[is.na(y1)] <- 0
-        if(length(unique(sign(diff(x1))))==1){
-          x3 <- if(unique(sign(diff(x1)))==-1) rev(x1) else x1
-          y3 <- if(unique(sign(diff(x1)))==-1) rev(y1) else y1
-          s <- stinterp(x3,y3, seq(min(x3),max(x3), diff(xlim)/500)) # way better than interpSpline, not prone to oscillations
-          lines(s, col=col.focal, lwd=3)
-        } else lines(x1, y1, col=col.focal, lwd=3)
-
-        # labels
-        position <- rep(0:2, times=100)
-        side <- if(increasing.sort[i]==T) 4 else 2
-        space <- 12
-        lines(if(increasing.sort[i]==T) c(x1[length(x1)], x1[length(x1)]+position[i]*diff(range(x))/space) else c(x1[1], x1[1]-position[i]*diff(range(x))/space), 
-              if(increasing.sort[i]==T) rep(y1[length(y1)],2) else rep(y1[1],2), col=col.focal, lty=2)
-        text(if(increasing.sort[i]==T) x1[length(x1)]+position[i]*diff(range(x))/space else x1[1]-position[i]*diff(range(x))/space, 
-             if(increasing.sort[i]==T) y1[length(y1)] else y1[1], 
-             spp, col=col.focal, pos=side, font=2, cex=0.7, offset=0.1)
- 
-        if(recent==T){
-          x1 <- x[1:2]
-          y1 <- data.sort[1:2, which(spps.sort==spp)]
-          lines(x1, y1, col=col.focal, lwd=1.25, lty=1)  
-          points(x1[2],y1[2], pch=21, bg=col.focal, col=col.focal2, cex=1.2)
+        # species scatterplot
+        #-------------------------
+        
+        data <- if(spplevel==T) get(paste("suit.area", edatope, sep=".")) else get(paste("spp.area", edatope, sep="."))
+        clim.data <- clim.meanChange
+        ColScheme <- sppcolors
+        spps <- names(data)
+        
+        x <- clim.data[, which(variables==var1)]
+        variable.type1 <- variable.types[which(variables==var1)]
+        
+        xlim=range(x)*c(if(min(x)<0) 1.1 else 0.9, if(max(x)>0) 1.1 else 0.9)-c(diff(range(x))/4, 0)
+        ylim=c(0, max(data, na.rm=T))
+        
+        par(mar=c(3,4,0,1), mgp=c(1.25, 0.25,0), cex=1.5)
+        plot(0,col="white", tck=0, xaxt="n", yaxt="n", xaxs="i", yaxs="i", xlim=xlim, ylim=ylim, ylab="",
+             xlab=paste("Change in", variable.names$Variable[which(variable.names$Code==var1)]), 
+        )
+        par(mgp=c(2.5,0.25, 0))
+        title(ylab=paste("Tree species' feasible area ('000 sq.km)"))
+        
+        axis(1, at=pretty(x), labels=pretty(x), tck=0)
+        axis(2, at=pretty(ylim), labels=pretty(ylim)/1000, tck=0, las=2)
+        
+        lines(rep(x[which(scenario[,1]==gcm.focal & scenario[,3]==proj.year)], 2), ylim, col="gray90", lwd=2)
+        
+        increasing <- data[which(scenario$GCM==gcm.focal & scenario$proj.year==2085),]>data[1,]
+        order.increasing <- rev(order(data[which(scenario$GCM==gcm.focal & scenario$proj.year==2085),increasing==T]))
+        order.decreasing <- rev(order(data[1,increasing==F]))
+        spps.increasing <- spps[increasing==T][order.increasing]
+        spps.decreasing <- spps[increasing==F][order.decreasing]
+        data.increasing <- data[,increasing==T][,order.increasing]
+        data.decreasing <- data[,increasing==F][,order.decreasing]
+        spps.sort <- c(spps.increasing, spps.decreasing)
+        data.sort <- cbind(data.increasing, data.decreasing)
+        increasing.sort <- increasing[match(spps.sort, spps)]
+        for(spp in spps.sort){
+          i <- which(spps.sort==spp)
+          col.focal <- if(spp.focal=="none") sppcolors[i] else "lightgray"  
+          col.focal2 <- if(spp.focal=="none") "black" else "darkgray"  
+          x1 <- x[c(1, which(scenario[,1]==gcm.focal))]
+          y1 <- data.sort[c(1, which(scenario[,1]==gcm.focal)), which(spps.sort==spp)]
+          y1[is.na(y1)] <- 0
+          if(length(unique(sign(diff(x1))))==1){
+            x3 <- if(unique(sign(diff(x1)))==-1) rev(x1) else x1
+            y3 <- if(unique(sign(diff(x1)))==-1) rev(y1) else y1
+            s <- stinterp(x3,y3, seq(min(x3),max(x3), diff(xlim)/500)) # way better than interpSpline, not prone to oscillations
+            lines(s, col=col.focal, lwd=3)
+          } else lines(x1, y1, col=col.focal, lwd=3)
+          
+          # labels
+          position <- rep(0:2, times=100)
+          side <- if(increasing.sort[i]==T) 4 else 2
+          space <- 12
+          lines(if(increasing.sort[i]==T) c(x1[length(x1)], x1[length(x1)]+position[i]*diff(range(x))/space) else c(x1[1], x1[1]-position[i]*diff(range(x))/space), 
+                if(increasing.sort[i]==T) rep(y1[length(y1)],2) else rep(y1[1],2), col=col.focal, lty=2)
+          text(if(increasing.sort[i]==T) x1[length(x1)]+position[i]*diff(range(x))/space else x1[1]-position[i]*diff(range(x))/space, 
+               if(increasing.sort[i]==T) y1[length(y1)] else y1[1], 
+               spp, col=col.focal, pos=side, font=2, cex=0.7, offset=0.1)
+          
+          if(recent==T){
+            x1 <- x[1:2]
+            y1 <- data.sort[1:2, which(spps.sort==spp)]
+            lines(x1, y1, col=col.focal, lwd=1.25, lty=1)  
+            points(x1[2],y1[2], pch=21, bg=col.focal, col=col.focal2, cex=1.2)
+          }
+          
         }
         
-     }
-      
-      if(spp.focal!="none"){
-        for(gcm in gcms){
-          i=which(gcms==gcm)
-          x2 <- x[c(1, which(scenario[,1]==gcm))]
-          y2 <- data[c(1, which(scenario[,1]==gcm)), which(spps==spp.focal)]
-          if(length(unique(sign(diff(x2))))==1){
-            x3 <- if(unique(sign(diff(x2)))==-1) rev(x2) else x2
-            y3 <- if(unique(sign(diff(x2)))==-1) rev(y2) else y2
-            s <- stinterp(x3,y3, seq(min(x3),max(x3), diff(xlim)/500)) # way better than interpSpline, not prone to oscillations
-            lines(s, col=ColScheme.gcms[i], lwd=if(gcm==gcm.focal) 4 else 2)
-          } else lines(x2, y2, col=ColScheme.gcms[i], lwd=if(gcm==gcm.focal) 4 else 2)
-          j=which(proj.years==proj.year)-1
-          points(x2,y2, pch=21, bg=ColScheme.gcms[i], cex=1)
-          points(x2[j],y2[j], pch=21, bg=ColScheme.gcms[i], cex=if(gcm==gcm.focal) 3.5 else 3)
-          text(x2[j],y2[j], mods[i], cex=if(gcm==gcm.focal) 0.7 else 0.5, font=2)
+        if(spp.focal!="none"){
+          for(gcm in gcms){
+            i=which(gcms==gcm)
+            x2 <- x[c(1, which(scenario[,1]==gcm))]
+            y2 <- data[c(1, which(scenario[,1]==gcm)), which(spps==spp.focal)]
+            if(length(unique(sign(diff(x2))))==1){
+              x3 <- if(unique(sign(diff(x2)))==-1) rev(x2) else x2
+              y3 <- if(unique(sign(diff(x2)))==-1) rev(y2) else y2
+              s <- stinterp(x3,y3, seq(min(x3),max(x3), diff(xlim)/500)) # way better than interpSpline, not prone to oscillations
+              lines(s, col=ColScheme.gcms[i], lwd=if(gcm==gcm.focal) 4 else 2)
+            } else lines(x2, y2, col=ColScheme.gcms[i], lwd=if(gcm==gcm.focal) 4 else 2)
+            j=which(proj.years==proj.year)-1
+            points(x2,y2, pch=21, bg=ColScheme.gcms[i], cex=1)
+            points(x2[j],y2[j], pch=21, bg=ColScheme.gcms[i], cex=if(gcm==gcm.focal) 3.5 else 3)
+            text(x2[j],y2[j], mods[i], cex=if(gcm==gcm.focal) 0.7 else 0.5, font=2)
+          }
         }
-      }
-      
-      
+        
+        
       } else if(input$plotspp==2){
         
         #-------------------------
@@ -983,34 +965,34 @@ server <- function(input, output, session) {
   height=reactive(ifelse(!is.null(input$innerWidth),input$innerWidth*0.25,0))
   )
   
-    #-------------------------
-    # Find-a-BEC
-    #-------------------------
+  #-------------------------
+  # Find-a-BEC
+  #-------------------------
+  
+  # showbgc <- "BGxh1"
+  # showzone <- "BG"
+  
+  output$becmap <- renderLeaflet({
     
-    # showbgc <- "BGxh1"
-    # showzone <- "BG"
+    showbgc <- input$showbgc
+    showzone <- input$showzone
     
-    output$becmap <- renderLeaflet({
-      
-      showbgc <- input$showbgc
-      showzone <- input$showzone
-      
-      leaflet() %>% 
-        addTiles() %>% 
-        addProviderTiles("Esri.WorldImagery", group = "Satellite view") %>%
-        addProviderTiles("Esri.WorldTerrain", group = "Terrain only") %>%
-        addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
-        fitBounds(lng1 = extent(bgc.simple)[1], lat1 = extent(bgc.simple)[3], lng2 = extent(bgc.simple)[2], lat2 = extent(bgc.simple)[4]) %>%
-        addLayersControl(
-          baseGroups = c("Base map", "Terrain only", "Satellite view"),
-          options = layersControlOptions(collapsed = FALSE),
-        ) %>%
-        addPolygons(data=bgc.simple[zone.maprecord == showzone,], fillColor = "red", color="red", smoothFactor = 0.2, fillOpacity = 0.4, weight=2, opacity=1)%>%
-        addPolygons(data=bgc.simple[bgc.maprecord == showbgc,], fillColor = "black", color="black", smoothFactor = 0.2, fillOpacity = 0.4, weight=2, opacity=1) 
-      
-    },
-    )
+    leaflet() %>% 
+      addTiles() %>% 
+      addProviderTiles("Esri.WorldImagery", group = "Satellite view") %>%
+      addProviderTiles("Esri.WorldTerrain", group = "Terrain only") %>%
+      addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
+      fitBounds(lng1 = extent(bgc.simple)[1], lat1 = extent(bgc.simple)[3], lng2 = extent(bgc.simple)[2], lat2 = extent(bgc.simple)[4]) %>%
+      addLayersControl(
+        baseGroups = c("Base map", "Terrain only", "Satellite view"),
+        options = layersControlOptions(collapsed = FALSE),
+      ) %>%
+      addPolygons(data=bgc.simple[zone.maprecord == showzone,], fillColor = "red", color="red", smoothFactor = 0.2, fillOpacity = 0.4, weight=2, opacity=1)%>%
+      addPolygons(data=bgc.simple[bgc.maprecord == showbgc,], fillColor = "black", color="black", smoothFactor = 0.2, fillOpacity = 0.4, weight=2, opacity=1) 
     
+  },
+  )
+  
   #-------------------------
   # Model Metadata Table
   #-------------------------

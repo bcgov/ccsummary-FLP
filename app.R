@@ -71,6 +71,8 @@ ColScheme.gcms <- c(brewer.pal(n=length(gcms), "Paired"))
 
 ## BGC PROJECTIONS
 
+bgc.names <- read.csv(paste("data/All_BGCs_v11_21.csv", sep="."), stringsAsFactors = F)
+
 ## projected area of biogeoclimatic units
 bgc.area <- read.csv(paste("data/PredSum.BGC", studyarea, "csv", sep="."))
 temp <- bgc.area[-which(bgc.area$GCM=="ensemble"),] #remove ensemble vote
@@ -579,7 +581,8 @@ server <- function(input, output, session) {
     #Show popup on click
     observeEvent(input$map_click, {
       click <- input$map_click
-      text<-BGC.pred[cellFromXY(X, matrix(c(click$lng, click$lat), 1))]
+      bgc.popup <- BGC.pred[cellFromXY(X, matrix(c(click$lng, click$lat), 1))]
+      text<-paste0("<strong>", bgc.popup, "</strong>", "<br/>Zone: ", bgc.names$ZoneName[which(bgc.names$Map_Label==bgc.popup)], "<br/>Subzone/Variant: ",  bgc.names$SubzoneName[which(bgc.names$Map_Label==bgc.popup)])
       proxy <- leafletProxy("map")
       proxy %>% clearPopups() %>%
         addPopups(click$lng, click$lat, text)
@@ -615,15 +618,26 @@ server <- function(input, output, session) {
       values(X)[1:3] <- 1:3 # this is a patch that is necessary to get the color scheme right.
       
       leafletProxy("map") %>%
+        addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
         addRasterImage(X, colors =  c("darkgreen", "dodgerblue1", "gold2"), method="ngb", opacity = transparency, maxBytes = 6 * 1024 * 1024)%>%
-        addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)%>%
-        addLegend(colors =  c("#006400", "#1E90FF", "#EEC900"), labels=c("1 (primary)", "2 (secondary)", "3 (tertiary)"))
+        addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)
       
     }
 
   })
   
-  
+  # Use a separate observer to recreate the legend as needed.
+  observe({
+    proxy <- leafletProxy("map")
+    
+    # Remove any existing legend, and only if the legend is
+    # enabled, create a new one.
+    proxy %>% clearControls()
+    if (input$type==3) {
+      proxy %>% addLegend(colors =  c("#006400", "#1E90FF", "#EEC900"), labels=c("1 (primary)", "2 (secondary)", "3 (tertiary)"))
+    }
+  })
+
   output$scatterPlot <- renderPlot({
     
     # proj.year <- 2055

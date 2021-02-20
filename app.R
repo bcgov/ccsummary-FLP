@@ -1,7 +1,7 @@
 ## A draft app for visualization of climate change in defined areas
 ## author: Colin Mahony colin.mahony@gov.bc.ca
 
-# Copyright 2021 Colin Mahony
+# Copyright 2021 Province of British Columbia
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

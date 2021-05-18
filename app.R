@@ -705,6 +705,15 @@ server <- function(input, output, session) {
   
   #Show popup on click
   observeEvent(input$map_click, {
+    gcm.focal <- input$gcm.focal
+    rcp <- "rcp45"
+    proj.year <-  proj.years[as.numeric(input$proj.year)+2]
+
+    if(input$maptype==1) X <- bgc.pred.ref
+    if(input$maptype==2) X <- bgc.pred.2005
+    if(input$maptype==3) X <- get(paste("bgc.pred", gcm.focal, rcp, proj.year, sep="."))
+    BGC.pred <- levels.bgc[values(X)]
+
     click <- input$map_click
     bgc.popup <- BGC.pred[cellFromXY(X, matrix(c(click$lng, click$lat), 1))]
     text<-paste0("<strong>", bgc.popup, "</strong>", "<br/>Zone: ", bgc.names$ZoneName[which(bgc.names$Map_Label==bgc.popup)], "<br/>Subzone/Variant: ",  bgc.names$SubzoneName[which(bgc.names$Map_Label==bgc.popup)])

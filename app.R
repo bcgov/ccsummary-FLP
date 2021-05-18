@@ -108,14 +108,14 @@ zonecolors$colour[match(zonecolors.BC$zone, zonecolors$classification)] <- as.ch
 
 ## projected area of biogeoclimatic zones
 bgc.zones <- bgcs.all
-  for(i in zonecolors$classification){ bgc.zones[grep(i,bgcs.all)] <- i }
+for(i in zonecolors$classification){ bgc.zones[grep(i,bgcs.all)] <- i }
 zones <- unique(bgc.zones)
 zone.area <- data.frame(matrix(NA, length(bgc.area[,1]), length(zones)))
 names(zone.area) <- zones
 for(zone in zones){ 
   s <- which(bgc.zones==zone)
   zone.area[, which(zones==zone)] <- if(length(s)>1) apply(bgc.area[,s], 1, sum, na.rm=T) else bgc.area[,s]
-  }
+}
 zones.all <- names(zone.area)
 
 ## add colors for units not in color scheme. 
@@ -157,70 +157,81 @@ spps.all <- vector()
 spps.native <- vector()
 edatope="C4"
 for(edatope in edatopes){
-
-#fractional feasibility table
-suit.area <- read.csv(paste("data/PredSum.suit", studyarea, edatope, "csv", sep="."))
-temp <- suit.area[-which(suit.area$GCM=="ensemble"),] #remove ensemble vote
-temp.ens <- suit.area[which(suit.area$GCM=="ensemble"),] #ensemble vote
-suit.area <- rbind(temp, temp.ens)
-suit.area <- suit.area[,-c(1:3)] # matches the "scenario" table
-
-#species table
-spp.area <- read.csv(paste("data/PredSum.spp", studyarea, edatope, "csv", sep="."))
-temp <- spp.area[-which(spp.area$GCM=="ensemble"),] #remove ensemble vote
-temp.ens <- spp.area[which(spp.area$GCM=="ensemble"),] #ensemble vote
-spp.area <- rbind(temp, temp.ens)
-spp.area <- spp.area[,-c(1:3)] # matches the "scenario" table
-
-#fractional feasibility table for home range
-suit.area.home <- read.csv(paste("data/PredSum.suit.home", studyarea, edatope, "csv", sep="."))
-temp <- suit.area.home[-which(suit.area.home$GCM=="ensemble"),] #remove ensemble vote
-temp.ens <- suit.area.home[which(suit.area.home$GCM=="ensemble"),] #ensemble vote
-suit.area.home <- rbind(temp, temp.ens)
-suit.area.home <- suit.area.home[,-c(1:3)] # matches the "scenario" table
-
-#species tablefor home range
-spp.area.home <- read.csv(paste("data/PredSum.spp.home", studyarea, edatope, "csv", sep="."))
-temp <- spp.area.home[-which(spp.area.home$GCM=="ensemble"),] #remove ensemble vote
-temp.ens <- spp.area.home[which(spp.area.home$GCM=="ensemble"),] #ensemble vote
-spp.area.home <- rbind(temp, temp.ens)
-spp.area.home <- spp.area.home[,-c(1:3)] # matches the "scenario" table
-
-## spp color scheme
-colors = grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)][-1]
-colors = colors[-grep("yellow", colors)]
-set.seed(5)
-sppcolors <- c(brewer.pal(n=12, "Paired")[-11],sample(colors,dim(spp.area)[1]-11)) # removal of "11" is light yellow, doesn't show up well. 
-
-## calculate persistence and expansion tables
-suit.persistence <- sweep(suit.area.home, MARGIN=2,unlist(suit.area[1,]), '/' )
-spp.persistence <- sweep(spp.area.home, MARGIN=2,unlist(spp.area[1,]), '/' )
-suit.expansion <- sweep(suit.area-suit.area.home, MARGIN=2,unlist(suit.area[1,]), '/' )
-spp.expansion <- sweep(spp.area-spp.area.home, MARGIN=2,unlist(spp.area[1,]), '/' )
-
-## simplify and structure the area tables
-totalarea <- sum(suit.area[1,]) #historical distribution 
-small <- which(apply(suit.area, 2, sum, na.rm=T)/totalarea < 0.5) # establish insignificant species for removal
-assign(paste("suit.area", edatope, sep="."), suit.area[,-small]) #remove small units and assign to permanent table
-assign(paste("spp.area", edatope, sep="."), spp.area[,-small]) #remove small units and assign to permanent table
-assign(paste("spps.all", edatope, sep="."), names(spp.area)[-small])
-
-## simplify and structure the persistence and expansion tables
-totalarea <- sum(spp.area[1,]) #historical distribution 
-exotic <- which(spp.area[1,]/totalarea < 0.01) # establish insignificant species for removal
-assign(paste("suit.persistence", edatope, sep="."), suit.persistence[,-exotic]) #remove exotic units and assign to permanent table
-assign(paste("spp.persistence", edatope, sep="."), spp.persistence[,-exotic]) #remove exotic units and assign to permanent table
-assign(paste("suit.expansion", edatope, sep="."), suit.expansion[,-exotic]) #remove exotic units and assign to permanent table
-assign(paste("spp.expansion", edatope, sep="."), spp.expansion[,-exotic]) #remove exotic units and assign to permanent table
-assign(paste("spps.native", edatope, sep="."), names(spp.area)[-exotic])
-
-spps.all <- c(spps.all, names(spp.area)[-small])
-spps.native <- c(spps.native, names(spp.area)[-exotic])
-
+  
+  #fractional feasibility table
+  suit.area <- read.csv(paste("data/PredSum.suit", studyarea, edatope, "csv", sep="."))
+  temp <- suit.area[-which(suit.area$GCM=="ensemble"),] #remove ensemble vote
+  temp.ens <- suit.area[which(suit.area$GCM=="ensemble"),] #ensemble vote
+  suit.area <- rbind(temp, temp.ens)
+  suit.area <- suit.area[,-c(1:3)] # matches the "scenario" table
+  
+  #species table
+  spp.area <- read.csv(paste("data/PredSum.spp", studyarea, edatope, "csv", sep="."))
+  temp <- spp.area[-which(spp.area$GCM=="ensemble"),] #remove ensemble vote
+  temp.ens <- spp.area[which(spp.area$GCM=="ensemble"),] #ensemble vote
+  spp.area <- rbind(temp, temp.ens)
+  spp.area <- spp.area[,-c(1:3)] # matches the "scenario" table
+  
+  #fractional feasibility table for home range
+  suit.area.home <- read.csv(paste("data/PredSum.suit.home", studyarea, edatope, "csv", sep="."))
+  temp <- suit.area.home[-which(suit.area.home$GCM=="ensemble"),] #remove ensemble vote
+  temp.ens <- suit.area.home[which(suit.area.home$GCM=="ensemble"),] #ensemble vote
+  suit.area.home <- rbind(temp, temp.ens)
+  suit.area.home <- suit.area.home[,-c(1:3)] # matches the "scenario" table
+  
+  #species tablefor home range
+  spp.area.home <- read.csv(paste("data/PredSum.spp.home", studyarea, edatope, "csv", sep="."))
+  temp <- spp.area.home[-which(spp.area.home$GCM=="ensemble"),] #remove ensemble vote
+  temp.ens <- spp.area.home[which(spp.area.home$GCM=="ensemble"),] #ensemble vote
+  spp.area.home <- rbind(temp, temp.ens)
+  spp.area.home <- spp.area.home[,-c(1:3)] # matches the "scenario" table
+  
+  ## spp color scheme
+  colors = grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)][-1]
+  colors = colors[-grep("yellow", colors)]
+  set.seed(5)
+  sppcolors <- c(brewer.pal(n=12, "Paired")[-11],sample(colors,dim(spp.area)[1]-11)) # removal of "11" is light yellow, doesn't show up well. 
+  
+  ## calculate persistence and expansion tables
+  suit.persistence <- sweep(suit.area.home, MARGIN=2,unlist(suit.area[1,]), '/' )
+  spp.persistence <- sweep(spp.area.home, MARGIN=2,unlist(spp.area[1,]), '/' )
+  suit.expansion <- sweep(suit.area-suit.area.home, MARGIN=2,unlist(suit.area[1,]), '/' )
+  spp.expansion <- sweep(spp.area-spp.area.home, MARGIN=2,unlist(spp.area[1,]), '/' )
+  
+  ## simplify and structure the area tables
+  totalarea <- sum(suit.area[1,]) #historical distribution 
+  small <- which(apply(suit.area, 2, sum, na.rm=T)/totalarea < 0.5) # establish insignificant species for removal
+  assign(paste("suit.area", edatope, sep="."), suit.area[,-small]) #remove small units and assign to permanent table
+  assign(paste("spp.area", edatope, sep="."), spp.area[,-small]) #remove small units and assign to permanent table
+  assign(paste("spps.all", edatope, sep="."), names(spp.area)[-small])
+  
+  ## simplify and structure the persistence and expansion tables
+  totalarea <- sum(spp.area[1,]) #historical distribution 
+  exotic <- which(spp.area[1,]/totalarea < 0.01) # establish insignificant species for removal
+  assign(paste("suit.persistence", edatope, sep="."), suit.persistence[,-exotic]) #remove exotic units and assign to permanent table
+  assign(paste("spp.persistence", edatope, sep="."), spp.persistence[,-exotic]) #remove exotic units and assign to permanent table
+  assign(paste("suit.expansion", edatope, sep="."), suit.expansion[,-exotic]) #remove exotic units and assign to permanent table
+  assign(paste("spp.expansion", edatope, sep="."), spp.expansion[,-exotic]) #remove exotic units and assign to permanent table
+  assign(paste("spps.native", edatope, sep="."), names(spp.area)[-exotic])
+  
+  spps.all <- c(spps.all, names(spp.area)[-small])
+  spps.native <- c(spps.native, names(spp.area)[-exotic])
+  
 }
 
 spps.all <- unique(spps.all)[order(unique(spps.all))]
 spps.native <- unique(spps.native)[order(unique(spps.native))]
+
+## Color Schemes for species change maps
+breakpoints.suit <-   breakseq <- c(0.5,1.5,2.5,3.5)
+palette.suit <-   c("#006400", "#1E90FF", "#EEC900")
+ColScheme.suit <- colorBin(palette.suit, bins=breakpoints.suit, na.color = NA)
+breakpoints.change <- seq(-3,3,0.5)
+palette.change <- c(brewer.pal(11,"RdBu")[c(1,2,3,4,4)], "grey80", brewer.pal(11,"RdBu")[c(7,8,8,9,10,11)])
+ColScheme.change <- colorBin(palette.change, bins=breakpoints.change, na.color = NA)
+breakpoints.binary <- seq(-1,1,0.2)
+palette.binary <- c(brewer.pal(11,"RdBu")[c(1:4)], "grey90", brewer.pal(11,"RdBu")[c(7:11)])
+ColScheme.binary <- colorBin(palette.binary, bins=breakpoints.binary, na.color = NA)
 
 ## SPATIAL DATA
 bgc.simple <- st_read("data/bgc.simple.shp")
@@ -237,40 +248,40 @@ ui <- fluidPage(
                       fluidRow(
                         column(2,
                                helpText("Use this app to explore projected changes in climate variables, biogeoclimatic unit distributions, and tree species feasibility for reforestation. All data are from ClimateBC. See the 'Model Info' tab for model names"),
-                          
-                          tags$head(tags$script('$(document).on("shiny:connected", function(e) {
+                               
+                               tags$head(tags$script('$(document).on("shiny:connected", function(e) {
                             Shiny.onInputChange("innerWidth", window.innerWidth);
                             });
                             $(window).resize(function(e) {
                             Shiny.onInputChange("innerWidth", window.innerWidth);
                             });
                             ')),
-                          
-                          
-                          radioButtons("type", inline = FALSE, 
-                                       label = "Choose the type of map",
-                                       choices = list("Climate variables" = 1, "Biogeoclimatic units" = 2, "Species feasibility" = 3),
-                                       selected = 2),
-                          
-                          sliderInput("transparency", label = "Layer transparency", min = 0, 
-                                      max = 1, value = 0.7),
-                          
-                          radioButtons("maptype",
-                                       label = "Choose a time period",
-                                       choices = list("Reference (1961-1990)" = 1, "Recent (1991-2019)" = 2, "Future" = 3),
-                                       selected = 1),
-                          
-                          conditionalPanel(
-                            condition = "input.zonelevel == true",
-                            h4("Reference biogeoclimatic zone map"),
-                            img(src = paste("refmap",studyarea, "zones.png", sep="."), height = 669*0.45, width = 661*0.45)
-                          ),
-
-                          conditionalPanel(
-                            condition = "input.zonelevel == false",
-                            h4("Reference biogeoclimatic variant map"),
-                            img(src = paste("refmap",studyarea, "variants.png", sep="."), height = 669*0.45, width = 661*0.45)
-                          )
+                               
+                               
+                               radioButtons("type", inline = FALSE, 
+                                            label = "Choose the type of map",
+                                            choices = list("Climate variables" = 1, "Biogeoclimatic units" = 2, "Species feasibility" = 3),
+                                            selected = 2),
+                               
+                               sliderInput("transparency", label = "Layer transparency", min = 0, 
+                                           max = 1, value = 0.7),
+                               
+                               radioButtons("maptype",
+                                            label = "Choose a time period",
+                                            choices = list("Reference (1961-1990)" = 1, "Recent (1991-2019)" = 2, "Future" = 3),
+                                            selected = 1),
+                               
+                               conditionalPanel(
+                                 condition = "input.zonelevel == true",
+                                 h4("Reference biogeoclimatic zone map"),
+                                 img(src = paste("refmap",studyarea, "zones.png", sep="."), height = 669*0.45, width = 661*0.45)
+                               ),
+                               
+                               conditionalPanel(
+                                 condition = "input.zonelevel == false",
+                                 h4("Reference biogeoclimatic variant map"),
+                                 img(src = paste("refmap",studyarea, "variants.png", sep="."), height = 669*0.45, width = 661*0.45)
+                               )
                         ),    
                         
                         column(5, 
@@ -281,7 +292,7 @@ ui <- fluidPage(
                         
                         column(5, 
                                column(6, 
-
+                                      
                                       selectInput("var1", 
                                                   label = "Choose the x-axis variable",
                                                   choices = as.list(variables.select),
@@ -299,9 +310,9 @@ ui <- fluidPage(
                                       
                                       checkboxInput("recent", label = "Show recent observed climate (1991-2019)", value = T),
                                       
-                                                                     ),
+                               ),
                                column(6, 
-                                     
+                                      
                                       conditionalPanel(
                                         condition = "input.type == 1",
                                         
@@ -344,6 +355,11 @@ ui <- fluidPage(
                                       conditionalPanel(
                                         condition = "input.type == 3",
                                         
+                                        radioButtons("mapspp", inline = TRUE,
+                                                     label = "Choose a map type",
+                                                     choices = list("Feasibility" = 1, "Change" = 2, "Loss/gain" = 3),
+                                                     selected = 1),
+                                        
                                         radioButtons("plotspp", inline = TRUE,
                                                      label = "Choose a plot type",
                                                      choices = list("Area" = 1, "Persistence" = 2),
@@ -358,7 +374,7 @@ ui <- fluidPage(
                                         
                                         conditionalPanel(
                                           condition = "input.plotspp == 1",
-
+                                          
                                           conditionalPanel(
                                             condition = "input.edatope == 'B2'",
                                             
@@ -471,7 +487,7 @@ ui <- fluidPage(
                              )
                       )
              ),
-
+             
              tabPanel("Find-a-BEC",
                       sidebarLayout(
                         sidebarPanel(
@@ -595,24 +611,18 @@ server <- function(input, output, session) {
     values(X) <- factor(pred, levels=units)
     values(X)[1:length(units)] <- 1:length(units) # this is a patch that is necessary to get the color scheme right.
     
-    #Show popup on click
-    observeEvent(input$map_click, {
-      click <- input$map_click
-      bgc.popup <- BGC.pred[cellFromXY(X, matrix(c(click$lng, click$lat), 1))]
-      text<-paste0("<strong>", bgc.popup, "</strong>", "<br/>Zone: ", bgc.names$ZoneName[which(bgc.names$Map_Label==bgc.popup)], "<br/>Subzone/Variant: ",  bgc.names$SubzoneName[which(bgc.names$Map_Label==bgc.popup)])
-      proxy <- leafletProxy("map")
-      proxy %>% clearPopups() %>%
-        addPopups(click$lng, click$lat, text)
-    })
-    
     if(input$type==2){
       
       leafletProxy("map") %>%
         addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
         addRasterImage(X, colors = ColScheme, method="ngb", opacity = transparency, maxBytes = 6 * 1024 * 1024)%>%
         addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)
-
-    } else if(input$type==3){
+      
+    } 
+    if(input$type==3){
+      
+      X <- bgc.pred.ref
+      values(X) <- NA
       
       edatope <- input$edatope
       if(input$plotspp==1){
@@ -627,20 +637,56 @@ server <- function(input, output, session) {
       
       # spp.focal <- get(paste("input$spp.focal", input$plotspp, edatope, sep="."))
       
-      suit <- SuitLookup$ESuit[which(SuitLookup$Spp==spp.focal)][match(as.vector(unlist(SiteLookup[which(names(SiteLookup)==edatope)])), SuitLookup$SS_NoSpace[which(SuitLookup$Spp==spp.focal)])]
-      temp <- suit[match(BGC.pred, SiteLookup$BGC)]
-      temp[which(temp>3)] <- NA #set non-suitable to NA
       
-      values(X) <- factor(temp, levels=1:3)
-      values(X)[1:3] <- 1:3 # this is a patch that is necessary to get the color scheme right.
-      
-      leafletProxy("map") %>%
-        addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
-        addRasterImage(X, colors =  c("darkgreen", "dodgerblue1", "gold2"), method="ngb", opacity = transparency, maxBytes = 6 * 1024 * 1024)%>%
-        addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)
-      
+      if(input$mapspp==1){
+        values(X) <- NA
+        if(spp.focal!="none") {
+          suit <- SuitLookup$ESuit[which(SuitLookup$Spp==spp.focal)][match(as.vector(unlist(SiteLookup[which(names(SiteLookup)==edatope)])), SuitLookup$SS_NoSpace[which(SuitLookup$Spp==spp.focal)])]
+          if(input$maptype==3){
+            if(gcm.focal=="ensemble"){
+              suit.ref <- suit[match(levels.bgc[values(bgc.pred.ref)], SiteLookup$BGC)]
+              suit.ref[is.na(suit.ref)] <- 4 #set non-suitable to 4
+              change.proj <- values(raster(paste("data/Spp.ChangeSuit", studyarea, spp.focal, edatope, rcp, proj.year, "tif", sep=".")))
+              temp <- suit.ref-change.proj
+              temp[which(temp>3.5)] <- NA #set non-suitable to NA
+              temp[which(temp<1)] <- 1 #set non-suitable to NA
+            } else {
+              temp <- suit[match(BGC.pred, SiteLookup$BGC)]
+              temp[which(temp>3.5)] <- NA #set non-suitable to NA
+            }
+          } else {
+            temp <- suit[match(BGC.pred, SiteLookup$BGC)]
+            temp[which(temp>3.5)] <- NA #set non-suitable to NA
+          }
+          values(X) <- temp
+        }
+        leafletProxy("map") %>%
+          addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
+          addRasterImage(X, colors =  ColScheme.suit, method="ngb", opacity = transparency, maxBytes = 6 * 1024 * 1024)%>%
+          addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)
+      } 
+      if(input$mapspp==2){
+        values(X) <- NA
+        if(input$maptype==3){
+          if(spp.focal!="none") X <- raster(paste("data/Spp.ChangeSuit", studyarea, spp.focal, edatope, rcp, proj.year, "tif", sep="."))
+          leafletProxy("map") %>%
+            addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
+            addRasterImage(X, colors =  ColScheme.change, method="ngb", opacity = transparency, maxBytes = 6 * 1024 * 1024)%>%
+            addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)
+        }
+      } 
+      if(input$mapspp==3){
+        values(X) <- NA
+        if(input$maptype==3){
+          if(spp.focal!="none") X <- raster(paste("data/Spp.binary", studyarea, spp.focal, edatope, rcp, proj.year, "tif", sep="."))
+          leafletProxy("map") %>%
+            addProviderTiles("Esri.WorldTopoMap", group = "Base map") %>%
+            addRasterImage(X, colors =  ColScheme.binary, method="ngb", opacity = transparency, maxBytes = 6 * 1024 * 1024)%>%
+            addPolygons(data=bdy, fillColor = NA, color="black", smoothFactor = 0.2, fillOpacity = 0, weight=2)
+        } # end if(input$maptype==3)
+      }
     }
-
+    
   })
   
   # Use a separate observer to recreate the legend as needed.
@@ -651,10 +697,23 @@ server <- function(input, output, session) {
     # enabled, create a new one.
     proxy %>% clearControls()
     if (input$type==3) {
-      proxy %>% addLegend(colors =  c("#006400", "#1E90FF", "#EEC900"), labels=c("1 (primary)", "2 (secondary)", "3 (tertiary)"))
+      if(input$mapspp==1) proxy %>% addLegend(colors =  palette.suit, labels=c("1 (primary)", "2 (secondary)", "3 (tertiary)"), title = "Climatic feasibility")
+      if(input$mapspp==2) proxy %>% addLegend(pal = ColScheme.change, values = breakpoints.change, title = "Ensemble-mean change</br>in climatic feasibility")
+      if(input$mapspp==3) proxy %>% addLegend(pal = ColScheme.binary, values = breakpoints.binary, title = "Proportion of ensemble</br>predicting expansion (blue)</br>or retreat (red)</br>of climatic feasibility")
     }
   })
-
+  
+  #Show popup on click
+  observeEvent(input$map_click, {
+    click <- input$map_click
+    bgc.popup <- BGC.pred[cellFromXY(X, matrix(c(click$lng, click$lat), 1))]
+    text<-paste0("<strong>", bgc.popup, "</strong>", "<br/>Zone: ", bgc.names$ZoneName[which(bgc.names$Map_Label==bgc.popup)], "<br/>Subzone/Variant: ",  bgc.names$SubzoneName[which(bgc.names$Map_Label==bgc.popup)])
+    proxy <- leafletProxy("map")
+    proxy %>% clearPopups() %>%
+      addPopups(click$lng, click$lat, text)
+  })
+  
+  
   output$scatterPlot <- renderPlot({
     
     # proj.year <- 2055

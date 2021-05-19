@@ -227,11 +227,13 @@ breakpoints.suit <-   breakseq <- c(0.5,1.5,2.5,3.5)
 palette.suit <-   c("#006400", "#1E90FF", "#EEC900")
 ColScheme.suit <- colorBin(palette.suit, bins=breakpoints.suit, na.color = NA)
 breakpoints.change <- seq(-3,3,0.5)
-palette.change <- c(brewer.pal(11,"RdBu")[c(1,2,3,4,4)], "grey80", brewer.pal(11,"RdBu")[c(7,8,8,9,10,11)])
+palette.change <- c(brewer.pal(11,"RdBu")[c(1,2,3,4,5,6)], brewer.pal(11,"RdBu")[c(6,7,8,9,10,11)])
 ColScheme.change <- colorBin(palette.change, bins=breakpoints.change, na.color = NA)
+labels.change <- breakpoints.change[-median(1:length(breakpoints.change))]
 breakpoints.binary <- seq(-1,1,0.2)
-palette.binary <- c(brewer.pal(11,"RdBu")[c(1:4)], "grey90", brewer.pal(11,"RdBu")[c(7:11)])
+palette.binary <- c(brewer.pal(11,"RdBu")[c(1:4,6)], brewer.pal(11,"RdBu")[c(6,8:11)])
 ColScheme.binary <- colorBin(palette.binary, bins=breakpoints.binary, na.color = NA)
+labels.binary <- paste(abs(seq(-.9,.9,0.2))*100, "%", sep="")
 
 ## SPATIAL DATA
 bgc.simple <- st_read("data/bgc.simple.shp")
@@ -365,7 +367,7 @@ ui <- fluidPage(
                                                      choices = list("Area" = 1, "Persistence" = 2),
                                                      selected = 1),
                                         
-                                        checkboxInput("spplevel", label = "Use fractional (partial) feasibilities", value = F),
+                                        checkboxInput("fractional", label = "Use fractional (partial) feasibilities", value = F),
                                         
                                         radioButtons("edatope", inline = TRUE, 
                                                      label = "Select an edatope (site type)",
@@ -698,8 +700,8 @@ server <- function(input, output, session) {
     proxy %>% clearControls()
     if (input$type==3) {
       if(input$mapspp==1) proxy %>% addLegend(colors =  palette.suit, labels=c("1 (primary)", "2 (secondary)", "3 (tertiary)"), title = "Climatic feasibility")
-      if(input$mapspp==2) proxy %>% addLegend(pal = ColScheme.change, values = breakpoints.change, title = "Ensemble-mean change</br>in climatic feasibility")
-      if(input$mapspp==3) proxy %>% addLegend(pal = ColScheme.binary, values = breakpoints.binary, title = "Proportion of ensemble</br>predicting expansion (blue)</br>or retreat (red)</br>of climatic feasibility")
+      if(input$mapspp==2) proxy %>% addLegend(colors = palette.change, labels = labels.change, title = "Ensemble-mean change</br>in climatic feasibility")
+      if(input$mapspp==3) proxy %>% addLegend(colors = palette.binary, labels = labels.binary, title = "% of ensemble predicting</br>loss (red) or gain (blue)</br>of climatic feasibility")
     }
   })
   
@@ -708,12 +710,12 @@ server <- function(input, output, session) {
     gcm.focal <- input$gcm.focal
     rcp <- "rcp45"
     proj.year <-  proj.years[as.numeric(input$proj.year)+2]
-
+    
     if(input$maptype==1) X <- bgc.pred.ref
     if(input$maptype==2) X <- bgc.pred.2005
     if(input$maptype==3) X <- get(paste("bgc.pred", gcm.focal, rcp, proj.year, sep="."))
     BGC.pred <- levels.bgc[values(X)]
-
+    
     click <- input$map_click
     bgc.popup <- BGC.pred[cellFromXY(X, matrix(c(click$lng, click$lat), 1))]
     text<-paste0("<strong>", bgc.popup, "</strong>", "<br/>Zone: ", bgc.names$ZoneName[which(bgc.names$Map_Label==bgc.popup)], "<br/>Subzone/Variant: ",  bgc.names$SubzoneName[which(bgc.names$Map_Label==bgc.popup)])
@@ -730,12 +732,12 @@ server <- function(input, output, session) {
     # var1 <- "MAT"
     # var2 <- "MAP"
     # ratioscale <- T
-    # zonelevel=F
+    # zonelevel=T
     # unit.focal <- if(zonelevel==T) zones[1] else bgcs[1]
     # units <- if(zonelevel==T) zones else bgcs
-    # spplevel=T
-    # edatope <- edatopes[2]
-    # spp.focal <- "Sx"
+    # fractional=F
+    # edatope <- edatopes[1]
+    # spp.focal <- "Fd"
     # recent <- T
     # gcm.focal <- "ensemble"
     
@@ -746,7 +748,7 @@ server <- function(input, output, session) {
     zonelevel <- if(input$zonelevel==T) T else F
     unit.focal <- if(zonelevel==T) input$zone.focal else input$bgc.focal
     units <- if(zonelevel==T) zones else bgcs
-    spplevel <- if(input$spplevel==T) T else F
+    fractional <- if(input$fractional==T) T else F
     edatope <- input$edatope
     recent <- input$recent
     gcm.focal <- input$gcm.focal
@@ -820,7 +822,7 @@ server <- function(input, output, session) {
       variable.type1 <- variable.types[which(variables==var1)]
       
       xlim=range(x)*c(if(min(x)<0) 1.1 else 0.9, if(max(x)>0) 1.1 else 0.9)-c(diff(range(x))/4, 0)
-      ylim=c(0, max(data, na.rm=T))
+      ylim=c(0, max(data, na.rm=T)*1.05)
       
       par(mar=c(3,4,0,1), mgp=c(1.25, 0.25,0), cex=1.5)
       plot(0,col="white", tck=0, xaxt="n", yaxt="n", xaxs="i", yaxs="i", xlim=xlim, ylim=ylim, ylab="",
@@ -839,15 +841,15 @@ server <- function(input, output, session) {
       order.decreasing <- rev(order(data[1,increasing==F]))
       units.increasing <- units[increasing==T][order.increasing]
       units.decreasing <- units[increasing==F][order.decreasing]
-      data.increasing <- data[,increasing==T][,order.increasing]
-      data.decreasing <- data[,increasing==F][,order.decreasing]
+      data.increasing <-  if(length(which(increasing==T))>1) data[,increasing==T][,order.increasing] else data[,increasing==T]
+      data.decreasing <- if(length(which(increasing==F))>1) data[,increasing==F][,order.decreasing] else data[,increasing==F]
       units.sort <- c(units.increasing, units.decreasing)
       data.sort <- cbind(data.increasing, data.decreasing)
       increasing.sort <- increasing[match(units.sort, units)]
       for(unit in units.sort){
         i <- which(units.sort==unit)
-        col.focal <- if(unit.focal=="none") ColScheme$colour[which(ColScheme$classification==unit)] else "lightgray"  
-        col.focal2 <- if(unit.focal=="none") "black" else "darkgray"  
+        col.focal <- if(unit.focal=="none") ColScheme$colour[which(ColScheme$classification==unit)] else "lightgray"
+        col.focal2 <- if(unit.focal=="none") "black" else "darkgray"
         x1 <- x[c(1, which(scenario[,1]==gcm.focal))]
         y1 <- data.sort[c(1, which(scenario[,1]==gcm.focal)), which(units.sort==unit)]
         y1[is.na(y1)] <- 0
@@ -862,16 +864,16 @@ server <- function(input, output, session) {
         position <- rep(0:2, times=100)
         side <- if(increasing.sort[i]==T) 4 else 2
         space <- 12
-        lines(if(increasing.sort[i]==T) c(x1[length(x1)], x1[length(x1)]+position[i]*diff(range(x))/space) else c(x1[1], x1[1]-position[i]*diff(range(x))/space), 
+        lines(if(increasing.sort[i]==T) c(x1[length(x1)], x1[length(x1)]+position[i]*diff(range(x))/space) else c(x1[1], x1[1]-position[i]*diff(range(x))/space),
               if(increasing.sort[i]==T) rep(y1[length(y1)],2) else rep(y1[1],2), col=col.focal, lty=2)
-        text(if(increasing.sort[i]==T) x1[length(x1)]+position[i]*diff(range(x))/space else x1[1]-position[i]*diff(range(x))/space, 
-             if(increasing.sort[i]==T) y1[length(y1)] else y1[1], 
+        text(if(increasing.sort[i]==T) x1[length(x1)]+position[i]*diff(range(x))/space else x1[1]-position[i]*diff(range(x))/space,
+             if(increasing.sort[i]==T) y1[length(y1)] else y1[1],
              unit, col=col.focal, pos=side, font=2, cex=0.7, offset=0.1)
         
         if(recent==T){
           x1 <- x[1:2]
           y1 <- data.sort[1:2, which(units.sort==unit)]
-          lines(x1, y1, col=col.focal, lwd=1.25, lty=1)  
+          lines(x1, y1, col=col.focal, lwd=1.25, lty=1)
           points(x1[2],y1[2], pch=21, bg=col.focal, col=col.focal2, cex=1.2)
         }
         
@@ -907,7 +909,7 @@ server <- function(input, output, session) {
         # species scatterplot
         #-------------------------
         
-        data <- if(spplevel==T) get(paste("suit.area", edatope, sep=".")) else get(paste("spp.area", edatope, sep="."))
+        data <- if(fractional==T) get(paste("suit.area", edatope, sep=".")) else get(paste("spp.area", edatope, sep="."))
         clim.data <- clim.meanChange
         ColScheme <- sppcolors
         spps <- names(data)
@@ -916,7 +918,7 @@ server <- function(input, output, session) {
         variable.type1 <- variable.types[which(variables==var1)]
         
         xlim=range(x)*c(if(min(x)<0) 1.1 else 0.9, if(max(x)>0) 1.1 else 0.9)-c(diff(range(x))/4, 0)
-        ylim=c(0, max(data, na.rm=T))
+        ylim=c(0, max(data, na.rm=T)*1.05)
         
         par(mar=c(3,4,0,1), mgp=c(1.25, 0.25,0), cex=1.5)
         plot(0,col="white", tck=0, xaxt="n", yaxt="n", xaxs="i", yaxs="i", xlim=xlim, ylim=ylim, ylab="",
@@ -1002,8 +1004,8 @@ server <- function(input, output, session) {
         if(edatope=="C4") spp.focal <- input$spp.focal.2.C4
         if(edatope=="D6") spp.focal <- input$spp.focal.2.D6
         
-        persistence <- if(spplevel==T) get(paste("suit.persistence", edatope, sep=".")) else get(paste("spp.persistence", edatope, sep=".")) 
-        expansion <- if(spplevel==T) get(paste("suit.expansion", edatope, sep=".")) else get(paste("spp.expansion", edatope, sep=".")) 
+        persistence <- if(fractional==T) get(paste("suit.persistence", edatope, sep=".")) else get(paste("spp.persistence", edatope, sep=".")) 
+        expansion <- if(fractional==T) get(paste("suit.expansion", edatope, sep=".")) else get(paste("spp.expansion", edatope, sep=".")) 
         spps <- names(persistence)
         
         par(mar=c(3,4,0.1,0.1), mgp=c(1.25, 0.25, 0), cex=1.5) 
@@ -1021,6 +1023,7 @@ server <- function(input, output, session) {
         # arctext(x = "Shrinking feasible range", center = c(-1, -29.3), radius = 4.6, start = 0.431*pi , cex = 0.8, stretch = 1.05, col="darkgray", font=2)
         # mtext(paste(edatope.name[which(edatopes==edatope)], " sites", " (", edatope, ")", sep=""), side=3, line=-1.25, adj= if(edatope=="C4") 0.025 else 0.075, cex=0.7, font=1)
         
+        spp=spps[2]
         for(spp in spps){
           i <- which(spps==spp)
           col.focal <- if(spp.focal=="none") sppcolors[i] else "lightgray"  
@@ -1031,7 +1034,9 @@ server <- function(input, output, session) {
           y <- log2(y)
           
           # points(x,y)
-          if(length(x)>1) dataEllipse(x, y, levels=0.5, center.pch=21, add=T, col=col.focal, fill=T, lwd=0.5, plot.points=F)
+          if(length(x)>1){
+            if(var(y)==0) lines(range(x), range(y), col=col.focal) else dataEllipse(x, y, levels=0.5, center.pch=21, add=T, col=col.focal, fill=T, lwd=0.5, plot.points=F)
+          }
           points(mean(x),mean(y), pch=21, bg=col.focal, cex=if(spp==spp.focal) 4.5 else 3, col=col.focal2)
           text(mean(x),mean(y), spp, cex=if(spp==spp.focal) 1 else 0.7, font=2, col=col.focal2)
         }
@@ -1044,7 +1049,7 @@ server <- function(input, output, session) {
             y2[y2<2^(ylim[1])] <- 2^(ylim[1])
             y2 <- log2(y2)
             # if(all(diff(x2) > 0)){
-            if(length(unique(sign(diff(x2))))==1){
+            if(length(unique(sign(diff(x2))))==1 & sum(diff(x2))!=0){
               x3 <- if(unique(sign(diff(x2)))==-1) rev(x2) else x2
               y3 <- if(unique(sign(diff(x2)))==-1) rev(y2) else y2
               s <- stinterp(x3,y3, seq(min(x3),max(x3), diff(xlim)/500)) # way better than interpSpline, not prone to oscillations
